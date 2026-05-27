@@ -115,9 +115,12 @@ button.primary:hover:not(:disabled) {
 
 .main {
   flex: 1;
-  overflow-y: auto;
+  /* no overflow here — only the inner transcript items scroll, so the
+     attachments panel and transcript toolbar stay reachable when the
+     transcript grows. */
   padding: 20px;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -170,6 +173,10 @@ button.primary:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* When the user attaches a lot of files, scroll within the panel
+     instead of eating into the transcript area below. */
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 .att-body.drag-over {
@@ -373,8 +380,20 @@ button.primary:hover:not(:disabled) {
 }
 
 .analysis-panel {
+  /* Action buttons (ライブ整理 / 会議をまとめる) stay fixed at the top;
+     only the analysis-content wrapper scrolls. Same structural pattern
+     as the transcript pane. */
   flex: 1;
+  min-height: 0;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.analysis-content {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -690,10 +709,13 @@ button.secondary:hover:not(:disabled) {
 /* Transcript wrapper with toolbar */
 
 .transcript-wrap {
+  /* Fills the remaining vertical space inside .main and hosts the
+     fixed toolbar + the scrolling item list. */
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .transcript-toolbar {
@@ -1082,6 +1104,21 @@ button.secondary:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Empty-state placeholder also fills the scrolling area so the layout
+   doesn't collapse before any transcripts arrive. */
+.transcript-wrap > .empty {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #6b7077;
 }
 
 .turn {

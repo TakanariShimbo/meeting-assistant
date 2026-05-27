@@ -111,24 +111,28 @@ export function AnalysisPanel(): JSX.Element {
       {live.errorMessage && <div className="panel-error">live: {live.errorMessage}</div>}
       {final.errorMessage && <div className="panel-error">final: {final.errorMessage}</div>}
 
-      <AnalysisGroup
-        title="ライブ分析"
-        lastRunAt={live.lastRunAt}
-        result={live.progressPartial ?? live.result}
-        serialize={serializeLiveAnalysis}
-        empty="未実行。発話が溜まったら「ライブ整理」を押してください。"
-        boundaryLabel="ライブ分析"
-        renderView={(r) => <LiveView result={r as LiveAnalysis} />}
-      />
-      <AnalysisGroup
-        title="ファイナル分析"
-        lastRunAt={final.lastRunAt}
-        result={final.progressPartial ?? final.result}
-        serialize={serializeFinalAnalysis as (r: LiveAnalysis | FinalAnalysis) => string}
-        empty="未実行。会議終了時に「会議を締める」を押してください。"
-        boundaryLabel="ファイナル分析"
-        renderView={(r) => <FinalView result={r as FinalAnalysis} />}
-      />
+      {/* Only this wrapper scrolls — the action grid + errors above stay
+          pinned, so the run buttons remain reachable as analyses grow. */}
+      <div className="analysis-content">
+        <AnalysisGroup
+          title="ライブ分析"
+          lastRunAt={live.lastRunAt}
+          result={live.progressPartial ?? live.result}
+          serialize={serializeLiveAnalysis}
+          empty="未実行。発話が溜まったら「ライブ整理」を押してください。"
+          boundaryLabel="ライブ分析"
+          renderView={(r) => <LiveView result={r as LiveAnalysis} />}
+        />
+        <AnalysisGroup
+          title="ファイナル分析"
+          lastRunAt={final.lastRunAt}
+          result={final.progressPartial ?? final.result}
+          serialize={serializeFinalAnalysis as (r: LiveAnalysis | FinalAnalysis) => string}
+          empty="未実行。会議終了時に「会議を締める」を押してください。"
+          boundaryLabel="ファイナル分析"
+          renderView={(r) => <FinalView result={r as FinalAnalysis} />}
+        />
+      </div>
     </div>
   )
 }

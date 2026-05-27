@@ -1,11 +1,14 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import type { AudioSetupStatus } from '@shared/types'
+import {
+  CAPTURE_DESCRIPTION,
+  CAPTURE_SOURCE_NAME,
+  SINK_DESCRIPTION,
+  SINK_NAME
+} from '../constants'
 
 const execFileP = promisify(execFile)
-
-const SINK_NAME = 'meeting_assistant'
-const CAPTURE_SOURCE_NAME = 'meeting_assistant_capture'
 
 async function pactl(...args: string[]): Promise<string> {
   const { stdout } = await execFileP('pactl', args)
@@ -60,11 +63,13 @@ export async function getAudioStatus(): Promise<AudioSetupStatus> {
   }
 
   const modulesRaw = await pactl('list', 'short', 'modules').catch(() => '')
-  const sinkLoaded = /module-null-sink.*sink_name=meeting_assistant\b/.test(modulesRaw)
-  const captureSourceLoaded = /module-remap-source.*source_name=meeting_assistant_capture\b/.test(
+  const sinkLoaded = new RegExp(`module-null-sink.*sink_name=${SINK_NAME}\\b`).test(modulesRaw)
+  const captureSourceLoaded = new RegExp(
+    `module-remap-source.*source_name=${CAPTURE_SOURCE_NAME}\\b`
+  ).test(modulesRaw)
+  const loopbackLoaded = new RegExp(`module-loopback.*source=${SINK_NAME}\\.monitor\\b`).test(
     modulesRaw
   )
-  const loopbackLoaded = /module-loopback.*source=meeting_assistant\.monitor\b/.test(modulesRaw)
 
   const defaultSink = await readDefaultSink()
 
@@ -105,17 +110,22 @@ export async function setupVirtualSink(): Promise<void> {
     'load-module',
     'module-null-sink',
     `sink_name=${SINK_NAME}`,
-    'sink_properties=device.description=MeetingAssistant_Sink'
+    `sink_properties=device.description=${SINK_DESCRIPTION}`
   )
   await pactlSilent(
     'load-module',
     'module-remap-source',
     `source_name=${CAPTURE_SOURCE_NAME}`,
     `master=${SINK_NAME}.monitor`,
-    'source_properties=device.description=MeetingAssistant_Capture'
+    `source_properties=device.description=${CAPTURE_DESCRIPTION}`
   )
 
-  const loopbackArgs = ['load-module', 'module-loopback', `source=${SINK_NAME}.monitor`, 'latency_msec=1']
+  const loopbackArgs = [
+    'load-module',
+    'module-loopback',
+    `source=${SINK_NAME}.monitor`,
+    'latency_msec=1'
+  ]
   if (savedRealSink) loopbackArgs.push(`sink=${savedRealSink}`)
   // If we have no idea what the real sink is, skip the loopback rather than
   // load a self-referential one. User loses passthrough but capture still works.
@@ -133,7 +143,7 @@ export async function teardownVirtualSink(): Promise<void> {
   const modulesRaw = await pactl('list', 'short', 'modules').catch(() => '')
   const ids: string[] = []
   for (const line of modulesRaw.split('\n')) {
-    if (!line.includes('meeting_assistant')) continue
+    if (!line.includes(SINK_NAME)) continue
     const id = line.split(/\s+/)[0]
     if (id) ids.push(id)
   }

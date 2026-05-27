@@ -29,6 +29,11 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
     reasoningEffort: settings.finalReasoningEffort,
     webSearch: settings.finalWebSearch
   })
+  const [chatSettings, setChatSettings] = useState<AnalysisModeValue>({
+    model: settings.chatModel,
+    reasoningEffort: settings.chatReasoningEffort,
+    webSearch: settings.chatWebSearch
+  })
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [devicesLoading, setDevicesLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -64,7 +69,10 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
         liveWebSearch: liveAnalysis.webSearch,
         finalModel: finalAnalysis.model,
         finalReasoningEffort: finalAnalysis.reasoningEffort,
-        finalWebSearch: finalAnalysis.webSearch
+        finalWebSearch: finalAnalysis.webSearch,
+        chatModel: chatSettings.model,
+        chatReasoningEffort: chatSettings.reasoningEffort,
+        chatWebSearch: chatSettings.webSearch
       })
       setApiKey('')
       setMessage('保存しました')
@@ -124,6 +132,14 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
         webSearchLabel="Web 検索ツールを使う (確定版なので質優先で ON 推奨)"
         value={finalAnalysis}
         onChange={setFinalAnalysis}
+      />
+
+      <AnalysisModeSection
+        title="チャット"
+        storageKey="chat"
+        webSearchLabel="Web 検索ツールを使う (固有名詞・外部情報の確認、コスト/レイテンシ増)"
+        value={chatSettings}
+        onChange={setChatSettings}
       />
 
       <div className="settings-actions">

@@ -5,6 +5,7 @@ import type {
   LiveAnalysis,
   TranscriptSegment
 } from '@shared/analysis'
+import type { ChatMessage } from '@shared/chat'
 
 export type SessionStatus = 'idle' | 'connecting' | 'connected' | 'paused' | 'error'
 
@@ -31,17 +32,33 @@ interface ModeState<T> {
   progressPartial: T | null
 }
 
+export interface ChatSlice {
+  /** Committed messages (user + completed assistant turns). */
+  messages: ChatMessage[]
+  /** While streaming, the in-progress assistant text not yet committed. */
+  streamingText: string
+  streaming: boolean
+  errorMessage: string | null
+}
+
 interface State {
   status: SessionStatus
   errorMessage: string | null
   items: TranscriptItem[]
   live: ModeState<LiveAnalysis>
   final: ModeState<FinalAnalysis>
+  chat: ChatSlice
 
   setStatus: (s: SessionStatus, err?: string | null) => void
   upsertDelta: (id: string, delta: string) => void
   upsertFinal: (id: string, text: string) => void
   clear: () => void
+
+  appendChatMessage: (msg: ChatMessage) => void
+  setChatStreaming: (streaming: boolean) => void
+  setChatStreamingText: (text: string) => void
+  setChatError: (err: string | null) => void
+  clearChat: () => void
 
   /** Final items after the given cutoff (null = from the start). */
   getSegmentsSince: (cutoffItemId: string | null) => TranscriptSegment[]
@@ -74,12 +91,20 @@ const initialModeState = <T,>(): ModeState<T> => ({
   progressPartial: null
 })
 
+const initialChat: ChatSlice = {
+  messages: [],
+  streamingText: '',
+  streaming: false,
+  errorMessage: null
+}
+
 export const useStore = create<State>((set, get) => ({
   status: 'idle',
   errorMessage: null,
   items: [],
   live: initialModeState<LiveAnalysis>(),
   final: initialModeState<FinalAnalysis>(),
+  chat: initialChat,
 
   setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
 
@@ -113,8 +138,31 @@ export const useStore = create<State>((set, get) => ({
     set({
       items: [],
       live: initialModeState<LiveAnalysis>(),
-      final: initialModeState<FinalAnalysis>()
+      final: initialModeState<FinalAnalysis>(),
+      chat: initialChat
     }),
+
+  appendChatMessage: (msg) =>
+    set((s) => ({ chat: { ...s.chat, messages: [...s.chat.messages, msg] } })),
+
+  setChatStreaming: (streaming) =>
+    set((s) => ({
+      chat: {
+        ...s.chat,
+        streaming,
+        // Starting fresh streaming run — clear any previous error so the UI
+        // doesn't show a stale message above the live tokens.
+        errorMessage: streaming ? null : s.chat.errorMessage,
+        streamingText: streaming ? '' : s.chat.streamingText
+      }
+    })),
+
+  setChatStreamingText: (text) =>
+    set((s) => ({ chat: { ...s.chat, streamingText: text } })),
+
+  setChatError: (errorMessage) => set((s) => ({ chat: { ...s.chat, errorMessage } })),
+
+  clearChat: () => set({ chat: initialChat }),
 
   getSegmentsSince: (cutoffItemId) => {
     // Include partial (still-streaming) items too — Live analysis benefits

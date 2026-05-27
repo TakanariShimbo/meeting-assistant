@@ -2,6 +2,7 @@ import { clipboard, ipcMain } from 'electron'
 import { IPC } from '@shared/channels'
 import type { AnalyzeRequest } from '@shared/analysis'
 import type { AttachmentInput } from '@shared/attachments'
+import type { ChatRequest } from '@shared/chat'
 import type { SdpExchangeRequest, SettingsUpdate } from '@shared/types'
 import { analyze } from './analyzer'
 import {
@@ -10,6 +11,7 @@ import {
   listAttachments,
   removeAttachment
 } from './attachments'
+import { cancelChat, chat } from './chat'
 import { exchangeSdp } from './realtime'
 import {
   getAudioStatus,
@@ -56,5 +58,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.AttachmentClear, () => {
     clearAttachments()
     return listAttachments()
+  })
+
+  ipcMain.handle(IPC.Chat, (_e, req: ChatRequest) => chat(req))
+  ipcMain.handle(IPC.ChatCancel, () => {
+    cancelChat()
   })
 }

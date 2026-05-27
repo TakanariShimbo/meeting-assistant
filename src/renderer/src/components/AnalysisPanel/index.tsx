@@ -13,11 +13,7 @@ import { FinalView } from './FinalView'
 import { formatTime } from './labels'
 import { LiveView } from './LiveView'
 
-interface AnalysisPanelProps {
-  width: number
-}
-
-export function AnalysisPanel({ width }: AnalysisPanelProps): JSX.Element {
+export function AnalysisPanel(): JSX.Element {
   const live = useStore((s) => s.live)
   const final = useStore((s) => s.final)
   const items = useStore((s) => s.items)
@@ -65,7 +61,7 @@ export function AnalysisPanel({ width }: AnalysisPanelProps): JSX.Element {
   }
 
   return (
-    <aside className="analysis-panel" style={{ width, flex: 'none' }}>
+    <div className="analysis-panel">
       <div className="panel-actions-grid">
         <div className="action-col">
           <button
@@ -133,7 +129,7 @@ export function AnalysisPanel({ width }: AnalysisPanelProps): JSX.Element {
         boundaryLabel="ファイナル分析"
         renderView={(r) => <FinalView result={r as FinalAnalysis} />}
       />
-    </aside>
+    </div>
   )
 }
 

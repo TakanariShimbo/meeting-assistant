@@ -2,6 +2,7 @@ import { app, BrowserWindow, session } from 'electron'
 import { join } from 'node:path'
 import { IPC } from '@shared/channels'
 import { setProgressEmitter, type AnalysisProgress } from './analyzer'
+import { setChatTextEmitter } from './chat'
 import { MAIN_WINDOW } from './constants'
 import { registerIpcHandlers } from './ipcHandlers'
 
@@ -47,6 +48,9 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   setProgressEmitter((p: AnalysisProgress) => {
     mainWindow?.webContents.send(IPC.AnalyzeProgress, p)
+  })
+  setChatTextEmitter((text: string) => {
+    mainWindow?.webContents.send(IPC.ChatProgress, { text })
   })
   createWindow()
 

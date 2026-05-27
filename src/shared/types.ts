@@ -13,6 +13,9 @@ export interface AppSettings {
   finalModel: LiveModel
   finalReasoningEffort: ReasoningEffort
   finalWebSearch: boolean
+  chatModel: LiveModel
+  chatReasoningEffort: ReasoningEffort
+  chatWebSearch: boolean
 }
 
 export interface SettingsUpdate {
@@ -28,6 +31,9 @@ export interface SettingsUpdate {
   finalModel?: LiveModel
   finalReasoningEffort?: ReasoningEffort
   finalWebSearch?: boolean
+  chatModel?: LiveModel
+  chatReasoningEffort?: ReasoningEffort
+  chatWebSearch?: boolean
 }
 
 export const REASONING_EFFORTS = ['minimal', 'low', 'medium', 'high'] as const

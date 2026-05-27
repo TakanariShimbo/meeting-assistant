@@ -12,5 +12,8 @@ export const IPC = {
   AttachmentList: 'attachment:list',
   AttachmentAdd: 'attachment:add',
   AttachmentRemove: 'attachment:remove',
-  AttachmentClear: 'attachment:clear'
+  AttachmentClear: 'attachment:clear',
+  Chat: 'chat',
+  ChatProgress: 'chat:progress',
+  ChatCancel: 'chat:cancel'
 } as const

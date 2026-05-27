@@ -5,13 +5,13 @@ import { buildAudioStream } from './audio'
 import { useStore } from './store'
 import { TranscriptList } from './components/TranscriptList'
 import { SettingsPanel } from './components/SettingsPanel'
-import { AnalysisPanel } from './components/AnalysisPanel'
+import { RightPane } from './components/RightPane'
 import { AttachmentsPanel } from './components/AttachmentsPanel'
 
-const ANALYSIS_WIDTH_KEY = 'meeting-assistant:analysisWidth'
-const ANALYSIS_WIDTH_DEFAULT = 620
-const ANALYSIS_WIDTH_MIN = 320
-const ANALYSIS_WIDTH_MAX_RATIO = 0.8
+const RIGHT_WIDTH_KEY = 'meeting-assistant:rightWidth'
+const RIGHT_WIDTH_DEFAULT = 620
+const RIGHT_WIDTH_MIN = 320
+const RIGHT_WIDTH_MAX_RATIO = 0.8
 
 export function App(): JSX.Element {
   const status = useStore((s) => s.status)
@@ -25,27 +25,27 @@ export function App(): JSX.Element {
   const [showSettings, setShowSettings] = useState(false)
   const clientRef = useRef<RealtimeClient | null>(null)
 
-  const [analysisWidth, setAnalysisWidth] = useState<number>(() => {
-    const saved = Number(localStorage.getItem(ANALYSIS_WIDTH_KEY))
-    return Number.isFinite(saved) && saved >= ANALYSIS_WIDTH_MIN ? saved : ANALYSIS_WIDTH_DEFAULT
+  const [rightWidth, setRightWidth] = useState<number>(() => {
+    const saved = Number(localStorage.getItem(RIGHT_WIDTH_KEY))
+    return Number.isFinite(saved) && saved >= RIGHT_WIDTH_MIN ? saved : RIGHT_WIDTH_DEFAULT
   })
   // Latest width in a ref so the mouseup handler closes over fresh state when persisting.
-  const widthRef = useRef(analysisWidth)
+  const widthRef = useRef(rightWidth)
   useEffect(() => {
-    widthRef.current = analysisWidth
-    localStorage.setItem(ANALYSIS_WIDTH_KEY, String(analysisWidth))
-  }, [analysisWidth])
+    widthRef.current = rightWidth
+    localStorage.setItem(RIGHT_WIDTH_KEY, String(rightWidth))
+  }, [rightWidth])
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     const startX = e.clientX
     const startWidth = widthRef.current
-    const maxWidth = window.innerWidth * ANALYSIS_WIDTH_MAX_RATIO
+    const maxWidth = window.innerWidth * RIGHT_WIDTH_MAX_RATIO
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
     const onMove = (ev: MouseEvent): void => {
       const next = startWidth + (startX - ev.clientX)
-      setAnalysisWidth(Math.max(ANALYSIS_WIDTH_MIN, Math.min(maxWidth, next)))
+      setRightWidth(Math.max(RIGHT_WIDTH_MIN, Math.min(maxWidth, next)))
     }
     const onUp = (): void => {
       window.removeEventListener('mousemove', onMove)
@@ -190,7 +190,7 @@ export function App(): JSX.Element {
           aria-orientation="vertical"
           onMouseDown={startResize}
         />
-        <AnalysisPanel width={analysisWidth} />
+        <RightPane width={rightWidth} />
       </div>
     </div>
   )

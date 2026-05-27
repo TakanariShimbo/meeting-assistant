@@ -15,12 +15,17 @@ import type {
   LiveAnalysis
 } from '@shared/analysis'
 import type { AttachmentInput, AttachmentMeta } from '@shared/attachments'
+import type { ChatRequest, ChatResponse } from '@shared/chat'
 
 interface AnalysisProgressPayload {
   mode: AnalysisMode
   phase: 'reasoning' | 'output'
   outputChars: number
   partialResult?: LiveAnalysis | FinalAnalysis
+}
+
+interface ChatProgressPayload {
+  text: string
 }
 
 const api = {
@@ -55,7 +60,15 @@ const api = {
     ipcRenderer.invoke(IPC.AttachmentAdd, input),
   attachmentRemove: (id: string): Promise<AttachmentMeta[]> =>
     ipcRenderer.invoke(IPC.AttachmentRemove, id),
-  attachmentClear: (): Promise<AttachmentMeta[]> => ipcRenderer.invoke(IPC.AttachmentClear)
+  attachmentClear: (): Promise<AttachmentMeta[]> => ipcRenderer.invoke(IPC.AttachmentClear),
+
+  chat: (req: ChatRequest): Promise<ChatResponse> => ipcRenderer.invoke(IPC.Chat, req),
+  cancelChat: (): Promise<void> => ipcRenderer.invoke(IPC.ChatCancel),
+  onChatProgress: (cb: (p: ChatProgressPayload) => void): (() => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, p: ChatProgressPayload): void => cb(p)
+    ipcRenderer.on(IPC.ChatProgress, listener)
+    return () => ipcRenderer.off(IPC.ChatProgress, listener)
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -143,10 +143,13 @@ Open via the **Settings** button in the header.
 | System-audio device | Input device that carries system audio (Linux: `MeetingAssistant_Capture` / mac: BlackHole / Win: Stereo Mix etc.) |
 | Live model | `gpt-5` / `gpt-5-mini` (default) / `gpt-5-nano` |
 | Live reasoning effort | `minimal` / `low` (default) / `medium` / `high` |
-| Live Web Search | Enables the `web_search` tool for Live analysis. |
+| Live Web Search | Enables the `web_search` tool for Live analysis (default OFF). |
 | Final model | Same options. Default `gpt-5`. |
-| Final reasoning effort | Same options. Default `medium`. |
-| Final Web Search | Same as Live. |
+| Final reasoning effort | Same options. Default `low`. |
+| Final Web Search | Same as Live (default OFF). |
+| Chat model | Same options. Default `gpt-5`. |
+| Chat reasoning effort | Same options. Default `low`. |
+| Chat Web Search | Same as Live (default **ON** — chat questions often need external context). |
 | Realtime instructions | System prompt for the Realtime session (mostly for the conversational mode; transcription-only usually needs no change). |
 
 API-key precedence: **settings file > `OPENAI_API_KEY` env var > none**.
@@ -208,15 +211,16 @@ Drop meeting materials, prior minutes, or related notes to give the analyzer ext
 
 ## Cost guide
 
-Real cost varies a lot with model choice, meeting length, and attachment size. Rough order-of-magnitude for a 60-minute meeting on defaults (`gpt-realtime-whisper` + Live `gpt-5-mini/low` + Final `gpt-5/medium`):
+Real cost varies a lot with model choice, meeting length, and attachment size. Rough order-of-magnitude for a 60-minute meeting on defaults (`gpt-realtime-whisper` + Live `gpt-5-mini/low` + Final `gpt-5/low` + Chat `gpt-5/low/web`):
 
 | Item | Rough estimate |
 |---|---|
 | Realtime transcription | OpenAI Realtime API audio-input pricing — several hundred yen per hour |
 | Live analysis | Tens of calls × small `gpt-5-mini` output. Prompt cache hits keep it down to ~1 yen / call. |
-| Final analysis | One call. Full transcript + `gpt-5/medium`. Tens of yen typical. |
+| Final analysis | One call. Full transcript + `gpt-5/low`. Tens of yen typical. |
+| Chat | Per user turn. Each turn = `gpt-5/low` + transcript + attachments. Prompt cache reuses transcript/attachment prefix across turns in a session. |
 
-See [OpenAI Pricing](https://openai.com/api/pricing/) for exact numbers. To cut cost: drop Live to `gpt-5-nano` + `minimal`, turn Web Search off, drop Final reasoning to `low`.
+See [OpenAI Pricing](https://openai.com/api/pricing/) for exact numbers. To cut cost: drop Live to `gpt-5-nano` + `minimal`, turn off Chat Web Search, and drop Chat/Final model to `gpt-5-mini`.
 
 ---
 

@@ -29,6 +29,9 @@ interface DiskSettings {
   finalModel?: string
   finalReasoningEffort?: string
   finalWebSearch?: boolean
+  chatModel?: string
+  chatReasoningEffort?: string
+  chatWebSearch?: boolean
 }
 
 const FILE_NAME = 'settings.json'
@@ -40,7 +43,10 @@ const VALID_REASONING = new Set<string>(REASONING_EFFORTS)
 const DEFAULT_LIVE_MODEL: LiveModel = 'gpt-5-mini'
 const DEFAULT_LIVE_REASONING: ReasoningEffort = 'low'
 const DEFAULT_FINAL_MODEL: LiveModel = 'gpt-5'
-const DEFAULT_FINAL_REASONING: ReasoningEffort = 'medium'
+const DEFAULT_FINAL_REASONING: ReasoningEffort = 'low'
+const DEFAULT_CHAT_MODEL: LiveModel = 'gpt-5'
+const DEFAULT_CHAT_REASONING: ReasoningEffort = 'low'
+const DEFAULT_CHAT_WEB_SEARCH = true
 
 let cache: DiskSettings | null = null
 
@@ -92,6 +98,8 @@ export async function getAppSettings(): Promise<AppSettings> {
   const liveReasoning = data.liveReasoningEffort ?? DEFAULT_LIVE_REASONING
   const finalModel = data.finalModel ?? DEFAULT_FINAL_MODEL
   const finalReasoning = data.finalReasoningEffort ?? DEFAULT_FINAL_REASONING
+  const chatModel = data.chatModel ?? DEFAULT_CHAT_MODEL
+  const chatReasoning = data.chatReasoningEffort ?? DEFAULT_CHAT_REASONING
   return {
     hasApiKey: hasFromFile || hasFromEnv,
     instructions: data.instructions ?? DEFAULT_INSTRUCTIONS,
@@ -108,7 +116,14 @@ export async function getAppSettings(): Promise<AppSettings> {
     finalReasoningEffort: VALID_REASONING.has(finalReasoning)
       ? (finalReasoning as ReasoningEffort)
       : DEFAULT_FINAL_REASONING,
-    finalWebSearch: Boolean(data.finalWebSearch)
+    finalWebSearch: Boolean(data.finalWebSearch),
+    chatModel: VALID_LIVE_MODELS.has(chatModel) ? (chatModel as LiveModel) : DEFAULT_CHAT_MODEL,
+    chatReasoningEffort: VALID_REASONING.has(chatReasoning)
+      ? (chatReasoning as ReasoningEffort)
+      : DEFAULT_CHAT_REASONING,
+    // For chat, web-search defaults ON (Q&A often needs external context).
+    // `??` lets explicit `false` survive; only an unsaved field falls back.
+    chatWebSearch: data.chatWebSearch ?? DEFAULT_CHAT_WEB_SEARCH
   }
 }
 
@@ -178,6 +193,17 @@ export async function updateSettings(update: SettingsUpdate): Promise<AppSetting
 
   if (update.liveWebSearch !== undefined) data.liveWebSearch = update.liveWebSearch
   if (update.finalWebSearch !== undefined) data.finalWebSearch = update.finalWebSearch
+
+  if (update.chatModel !== undefined && VALID_LIVE_MODELS.has(update.chatModel)) {
+    data.chatModel = update.chatModel
+  }
+  if (
+    update.chatReasoningEffort !== undefined &&
+    VALID_REASONING.has(update.chatReasoningEffort)
+  ) {
+    data.chatReasoningEffort = update.chatReasoningEffort
+  }
+  if (update.chatWebSearch !== undefined) data.chatWebSearch = update.chatWebSearch
 
   await persist(data)
   return getAppSettings()

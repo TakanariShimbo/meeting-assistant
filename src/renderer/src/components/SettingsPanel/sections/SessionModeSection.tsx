@@ -24,7 +24,7 @@ export function SessionModeSection({ value, onChange }: Props): JSX.Element {
           ))}
         </select>
         <p className="hint">
-          手動返答: 「返事リクエスト」を押したときだけ AI が応答 (会議メモ用途のデフォルト)。
+          手動返答: 「返答要求」を押したときだけ AI が応答 (会議メモ用途のデフォルト)。
           <br />
           自動返答: 発話の切れ目で AI が自動応答 (Realtime API の server VAD で turn 検知)。
           <br />

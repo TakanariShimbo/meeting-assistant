@@ -3,6 +3,7 @@ export const IPC = {
   SettingsSave: 'settings:save',
   RealtimeExchangeSdp: 'realtime:exchange-sdp',
   Analyze: 'analyze',
+  AnalyzeCancel: 'analyze:cancel',
   LinuxAudioStatus: 'linux-audio:status',
   LinuxAudioSetup: 'linux-audio:setup',
   LinuxAudioTeardown: 'linux-audio:teardown',

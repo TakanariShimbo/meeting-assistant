@@ -4,7 +4,8 @@ import type { AnalyzeRequest } from '@shared/analysis'
 import type { AttachmentInput } from '@shared/attachments'
 import type { ChatRequest } from '@shared/chat'
 import type { SdpExchangeRequest, SettingsUpdate } from '@shared/types'
-import { analyze } from './analyzer'
+import type { AnalysisMode } from '@shared/analysis'
+import { analyze, cancelAnalyze } from './analyzer'
 import {
   addAttachment,
   clearAttachments,
@@ -26,6 +27,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.SettingsSave, (_e, update: SettingsUpdate) => updateSettings(update))
   ipcMain.handle(IPC.RealtimeExchangeSdp, (_e, req: SdpExchangeRequest) => exchangeSdp(req))
   ipcMain.handle(IPC.Analyze, (_e, req: AnalyzeRequest) => analyze(req))
+  ipcMain.handle(IPC.AnalyzeCancel, (_e, mode?: AnalysisMode) => {
+    cancelAnalyze(mode)
+  })
 
   // Linux audio helpers. On non-Linux these still respond — `getAudioStatus`
   // reports pactlAvailable=false, so the renderer hides the UI.

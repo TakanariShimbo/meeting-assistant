@@ -98,6 +98,16 @@ button.primary:hover:not(:disabled) {
   background: #2563eb;
 }
 
+button.danger {
+  background: #b54545;
+  border-color: #b54545;
+  color: white;
+}
+
+button.danger:hover:not(:disabled) {
+  background: #9c3535;
+}
+
 .error {
   margin: 12px 20px 0;
   padding: 10px 14px;

@@ -28,13 +28,23 @@ export type ProgressEmitter = (p: AnalysisProgress) => void
 export async function consumeStream(
   body: ReadableStream<Uint8Array>,
   mode: AnalysisMode,
-  emit: ProgressEmitter
+  emit: ProgressEmitter,
+  signal: AbortSignal
 ): Promise<string | null> {
   const reader = body.getReader()
   const decoder = new TextDecoder()
   let buf = ''
   let accumulated = ''
   let lastPartialAt = 0
+
+  // If the caller aborts, cancel the reader so the underlying socket
+  // releases promptly (same pattern as chat/stream.ts).
+  const onAbort = (): void => {
+    reader.cancel().catch(() => {
+      /* already-closed reader; ignore */
+    })
+  }
+  signal.addEventListener('abort', onAbort)
 
   const emitPartial = (force = false): void => {
     const now = Date.now()
@@ -44,11 +54,20 @@ export async function consumeStream(
     }
     lastPartialAt = now
     const parsed = tryPartialParse(accumulated)
+    // Don't promote a partial-result with only one or two top-level fields:
+    // tryPartialParse returns `{}` for the very first '{' byte and a tiny
+    // sliver for the next few bytes, which fillDefaults turns into a
+    // looks-like-empty LiveAnalysis. If the renderer shows that, it
+    // visually wipes the previously displayed result. Wait until enough
+    // structure has streamed in before we replace what the user is seeing.
+    const SUBSTANTIVE_KEY_COUNT = 3
+    const parsedObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+    const isSubstantive = parsedObj !== null && Object.keys(parsedObj).length >= SUBSTANTIVE_KEY_COUNT
     const partialResult =
-      parsed && typeof parsed === 'object'
+      isSubstantive && parsedObj
         ? mode === 'live'
-          ? fillLiveDefaults(parsed as Record<string, unknown>)
-          : fillFinalDefaults(parsed as Record<string, unknown>)
+          ? fillLiveDefaults(parsedObj)
+          : fillFinalDefaults(parsedObj)
         : undefined
     emit({ mode, phase: 'output', outputChars: accumulated.length, partialResult })
   }
@@ -91,6 +110,7 @@ export async function consumeStream(
       }
     }
   } finally {
+    signal.removeEventListener('abort', onAbort)
     reader.releaseLock()
   }
 

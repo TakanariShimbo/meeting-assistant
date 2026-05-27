@@ -63,49 +63,29 @@ export function AnalysisPanel(): JSX.Element {
   return (
     <div className="analysis-panel">
       <div className="panel-actions-grid">
-        <div className="action-col">
-          <button
-            type="button"
-            className="primary"
-            onClick={() => void runIncremental('live')}
-            disabled={live.status === 'running' || !hasAnyItems}
-            title="前回の Live 結果に新規発話を足して更新"
-          >
-            {live.status === 'running' ? <RunningLabel state={live} kind="live" /> : 'ライブ整理'}
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => void runFresh('live')}
-            disabled={live.status === 'running' || !hasAnyItems}
-            title="前回結果を破棄して全文で再分析"
-          >
-            ↻ 全文で再整理
-          </button>
-        </div>
-        <div className="action-col">
-          <button
-            type="button"
-            onClick={() => void runIncremental('final')}
-            disabled={final.status === 'running' || !hasAnyItems}
-            title="Final or Live の最新結果に新規発話を足して確定版を作成"
-          >
-            {final.status === 'running' ? (
-              <RunningLabel state={final} kind="final" />
-            ) : (
-              '会議を締める'
-            )}
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => void runFresh('final')}
-            disabled={final.status === 'running' || !hasAnyItems}
-            title="前回結果を破棄して全文で確定版を作成"
-          >
-            ↻ 全文で再まとめ
-          </button>
-        </div>
+        <ModeActions
+          mode="live"
+          state={live}
+          hasAnyItems={hasAnyItems}
+          runLabel="中間整理"
+          freshLabel="↻ 全文で再整理"
+          runTitle="前回の中間整理に新規発話を足して更新"
+          freshTitle="前回結果を破棄して全文で再分析"
+          onRun={() => void runIncremental('live')}
+          onFresh={() => void runFresh('live')}
+        />
+        <ModeActions
+          mode="final"
+          state={final}
+          hasAnyItems={hasAnyItems}
+          runLabel="最終整理"
+          freshLabel="↻ 全文で再最終化"
+          runTitle="中間整理 or 前回の最終整理を土台に、確定版を作成"
+          freshTitle="前回結果を破棄して全文で確定版を作成"
+          onRun={() => void runIncremental('final')}
+          onFresh={() => void runFresh('final')}
+          runPrimary={false}
+        />
       </div>
 
       {live.errorMessage && <div className="panel-error">live: {live.errorMessage}</div>}
@@ -115,24 +95,88 @@ export function AnalysisPanel(): JSX.Element {
           pinned, so the run buttons remain reachable as analyses grow. */}
       <div className="analysis-content">
         <AnalysisGroup
-          title="ライブ分析"
+          title="中間整理"
           lastRunAt={live.lastRunAt}
           result={live.progressPartial ?? live.result}
           serialize={serializeLiveAnalysis}
-          empty="未実行。発話が溜まったら「ライブ整理」を押してください。"
-          boundaryLabel="ライブ分析"
+          empty="未実行。発話が溜まったら「中間整理」を押してください。"
+          boundaryLabel="中間整理"
           renderView={(r) => <LiveView result={r as LiveAnalysis} />}
         />
         <AnalysisGroup
-          title="ファイナル分析"
+          title="最終整理"
           lastRunAt={final.lastRunAt}
           result={final.progressPartial ?? final.result}
           serialize={serializeFinalAnalysis as (r: LiveAnalysis | FinalAnalysis) => string}
-          empty="未実行。会議終了時に「会議を締める」を押してください。"
-          boundaryLabel="ファイナル分析"
+          empty="未実行。会議終了時に「最終整理」を押してください。"
+          boundaryLabel="最終整理"
           renderView={(r) => <FinalView result={r as FinalAnalysis} />}
         />
       </div>
+    </div>
+  )
+}
+
+interface ModeActionsProps {
+  mode: 'live' | 'final'
+  state: { status: 'idle' | 'running' | 'ready' | 'error'; progressPhase: 'reasoning' | 'output' | null; progressChars: number }
+  hasAnyItems: boolean
+  runLabel: string
+  freshLabel: string
+  runTitle: string
+  freshTitle: string
+  onRun: () => void
+  onFresh: () => void
+  /** Live's primary is the visual emphasis (className="primary"); Final is secondary. */
+  runPrimary?: boolean
+}
+
+// The run/cancel button toggles role based on `state.status`:
+//   - idle/ready/error: clickable to start the analysis
+//   - running:          clickable to cancel; label shows progress to make
+//                       clear the request is alive and click will abort it
+function ModeActions({
+  mode,
+  state,
+  hasAnyItems,
+  runLabel,
+  freshLabel,
+  runTitle,
+  freshTitle,
+  onRun,
+  onFresh,
+  runPrimary = true
+}: ModeActionsProps): JSX.Element {
+  const running = state.status === 'running'
+  const onCancel = (): void => {
+    void window.api.cancelAnalyze(mode)
+  }
+  return (
+    <div className="action-col">
+      <button
+        type="button"
+        className={running ? 'danger' : runPrimary ? 'primary' : ''}
+        onClick={running ? onCancel : onRun}
+        disabled={!running && !hasAnyItems}
+        title={running ? 'クリックで中断' : runTitle}
+      >
+        {running ? (
+          <>
+            中断 <RunningLabel state={state} kind={mode} />
+          </>
+        ) : (
+          runLabel
+        )}
+      </button>
+      <button
+        type="button"
+        className="secondary"
+        onClick={onFresh}
+        disabled={running || !hasAnyItems}
+        title={freshTitle}
+      >
+        {freshLabel}
+      </button>
     </div>
   )
 }

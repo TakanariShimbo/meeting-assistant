@@ -95,7 +95,7 @@ export function RunningLabel({
   state: { progressPhase: 'reasoning' | 'output' | null; progressChars: number }
   kind: 'live' | 'final'
 }): JSX.Element {
-  const verb = kind === 'live' ? '整理' : 'まとめ'
+  const verb = kind === 'live' ? '中間整理' : '最終整理'
   if (state.progressPhase === 'output') {
     return (
       <>

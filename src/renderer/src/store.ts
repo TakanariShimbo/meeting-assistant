@@ -265,10 +265,15 @@ export const useStore = create<State>((set, get) => ({
             status: 'error',
             errorMessage: error,
             progressPhase: null,
-            progressChars: 0
-            // Intentionally NOT clearing progressPartial — the user keeps
-            // whatever fields the stream had managed to deliver so the panel
-            // doesn't go blank when the final parse fails.
+            progressChars: 0,
+            // Drop the half-cooked partial so the panel falls back to the
+            // previous successful `result`. The fallback-recovery path for
+            // a genuine-but-malformed final JSON lives in analyze() itself
+            // (which returns ok:true with fillDefaults applied), so we
+            // don't need progressPartial as a safety net here. Keeping it
+            // would just leave a stale 0%-filled partial on screen after
+            // cancel / network blip — which is exactly the bug it caused.
+            progressPartial: null
           }
         }) as Partial<State>
     ),

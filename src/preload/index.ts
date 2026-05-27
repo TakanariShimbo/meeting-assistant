@@ -36,6 +36,8 @@ const api = {
   exchangeSdp: (req: SdpExchangeRequest): Promise<SdpExchangeResponse> =>
     ipcRenderer.invoke(IPC.RealtimeExchangeSdp, req),
   analyze: (req: AnalyzeRequest): Promise<AnalyzeResponse> => ipcRenderer.invoke(IPC.Analyze, req),
+  cancelAnalyze: (mode?: AnalysisMode): Promise<void> =>
+    ipcRenderer.invoke(IPC.AnalyzeCancel, mode),
 
   // Linux PulseAudio / PipeWire helpers (managed from the main process so the
   // renderer never has to shell out).

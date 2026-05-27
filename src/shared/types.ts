@@ -64,7 +64,7 @@ export type AudioMode = (typeof AUDIO_MODES)[number]
 /**
  * Realtime session behavior — distinguishes who triggers the assistant reply.
  *  - `meeting`:      `create_response=false`. Reply only when the user clicks
- *                    "返事リクエスト" (= 手動返答). Default for note-taking use cases.
+ *                    "返答要求" (= 手動返答). Default for note-taking use cases.
  *  - `conversation`: `create_response=true`. Assistant replies automatically
  *                    on every detected turn end (= 自動返答). Manual reply
  *                    request still works.

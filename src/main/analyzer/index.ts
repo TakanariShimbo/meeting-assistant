@@ -1,4 +1,5 @@
 import type {
+  AnalysisMode,
   AnalyzeRequest,
   AnalyzeResponse,
   FinalAnalysis,
@@ -21,6 +22,20 @@ export function setProgressEmitter(fn: ProgressEmitter): void {
   emitProgress = fn
 }
 
+// One in-flight request per mode (Live + Final can run concurrently in
+// theory; the UI disables the same-mode buttons while running). The map
+// keys are the AnalysisMode values, so cancelAnalyze('live') stops Live
+// without disturbing Final.
+const inflight = new Map<AnalysisMode, AbortController>()
+
+export function cancelAnalyze(mode?: AnalysisMode): void {
+  if (mode) {
+    inflight.get(mode)?.abort()
+    return
+  }
+  for (const c of inflight.values()) c.abort()
+}
+
 export async function analyze(req: AnalyzeRequest): Promise<AnalyzeResponse> {
   const apiKey = await getApiKey()
   if (!apiKey) return { ok: false, error: 'OpenAI API キーが未設定です' }
@@ -37,6 +52,12 @@ export async function analyze(req: AnalyzeRequest): Promise<AnalyzeResponse> {
 
   const body = buildResponsesBody({ req, model, effort, webSearch })
 
+  // Replace any prior in-flight request of this mode (the renderer's UI
+  // already prevents this, but be defensive against race conditions).
+  inflight.get(req.mode)?.abort()
+  const controller = new AbortController()
+  inflight.set(req.mode, controller)
+
   let resp: Response
   try {
     resp = await fetch(RESPONSES_URL, {
@@ -46,18 +67,23 @@ export async function analyze(req: AnalyzeRequest): Promise<AnalyzeResponse> {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal
     })
   } catch (err) {
+    if (inflight.get(req.mode) === controller) inflight.delete(req.mode)
+    if (controller.signal.aborted) return { ok: false, error: '中断されました' }
     return { ok: false, error: `Responses API request failed: ${(err as Error).message}` }
   }
 
   if (!resp.ok) {
+    if (inflight.get(req.mode) === controller) inflight.delete(req.mode)
     const errText = await resp.text().catch(() => '')
     return { ok: false, error: `Responses API HTTP ${resp.status}: ${errText}` }
   }
 
   if (!resp.body) {
+    if (inflight.get(req.mode) === controller) inflight.delete(req.mode)
     return { ok: false, error: 'Responses API returned no streaming body' }
   }
 
@@ -68,11 +94,18 @@ export async function analyze(req: AnalyzeRequest): Promise<AnalyzeResponse> {
 
   let jsonText: string | null
   try {
-    jsonText = await consumeStream(resp.body, req.mode, emitProgress)
+    jsonText = await consumeStream(resp.body, req.mode, emitProgress, controller.signal)
   } catch (err) {
+    if (inflight.get(req.mode) === controller) inflight.delete(req.mode)
+    if (controller.signal.aborted) return { ok: false, error: '中断されました' }
     return { ok: false, error: `Stream read failed: ${(err as Error).message}` }
+  } finally {
+    if (inflight.get(req.mode) === controller) inflight.delete(req.mode)
   }
 
+  if (controller.signal.aborted) {
+    return { ok: false, error: '中断されました' }
+  }
   if (!jsonText) {
     return { ok: false, error: 'Responses API stream produced no output text' }
   }

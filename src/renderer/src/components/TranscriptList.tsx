@@ -34,7 +34,7 @@ export function TranscriptList({
           className="mode-select"
           value={sessionMode}
           onChange={(e) => onChangeMode(e.target.value as SessionMode)}
-          title="手動返答: 返事リクエストを押したときだけ AI が応答 / 自動返答: 発話の切れ目で AI が自動応答"
+          title="手動返答: 返答要求を押したときだけ AI が応答 / 自動返答: 発話の切れ目で AI が自動応答"
         >
           {SESSION_MODES.map((m) => (
             <option key={m} value={m}>
@@ -46,9 +46,9 @@ export function TranscriptList({
           type="button"
           onClick={onRequestReply}
           disabled={!canRequestReply}
-          title="AI に今すぐ返事をリクエスト"
+          title="AI に今すぐ返答を要求"
         >
-          返事リクエスト
+          返答要求
         </button>
         <CopyButton text={serializeTranscript(items)} label="全文コピー" />
       </div>

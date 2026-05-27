@@ -6,7 +6,10 @@ import {
 } from '@shared/types'
 
 export interface RealtimeClientCallbacks {
-  onStatus: (status: 'connecting' | 'connected' | 'closed' | 'error', detail?: string) => void
+  onStatus: (
+    status: 'connecting' | 'connected' | 'paused' | 'closed' | 'error',
+    detail?: string
+  ) => void
   onUserTranscriptDelta: (itemId: string, delta: string) => void
   onUserTranscriptCompleted: (itemId: string, text: string) => void
   onEvent?: (event: unknown) => void
@@ -118,6 +121,23 @@ export class RealtimeClient {
     this.streamCleanup = null
     this.stream = null
     this.cb.onStatus('closed')
+  }
+
+  /**
+   * Mute every outgoing audio track so the server VAD stops hearing speech
+   * and no new transcripts are generated. The peer connection + data channel
+   * stay open, so `resume()` is instant (no SDP re-negotiation, no new
+   * session config). Encoded silence on the wire is tiny — Opus collapses
+   * to a few bytes per frame for muted input.
+   */
+  pause(): void {
+    this.stream?.getAudioTracks().forEach((t) => (t.enabled = false))
+    this.cb.onStatus('paused')
+  }
+
+  resume(): void {
+    this.stream?.getAudioTracks().forEach((t) => (t.enabled = true))
+    this.cb.onStatus('connected')
   }
 
   /** Mirrors EventCodec.initialSessionConfigJson() in RealtimeRG. */

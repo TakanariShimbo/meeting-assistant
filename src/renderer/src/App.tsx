@@ -83,6 +83,7 @@ export function App(): JSX.Element {
         onStatus: (s, detail) => {
           if (s === 'connected') setStatus('connected')
           else if (s === 'connecting') setStatus('connecting')
+          else if (s === 'paused') setStatus('paused')
           else if (s === 'closed') setStatus('idle')
           else setStatus('error', detail ?? null)
         },
@@ -124,7 +125,11 @@ export function App(): JSX.Element {
     clientRef.current = null
   }
 
-  const isRunning = status === 'connecting' || status === 'connected'
+  const onPause = (): void => clientRef.current?.pause()
+  const onResume = (): void => clientRef.current?.resume()
+
+  const isActive = status === 'connecting' || status === 'connected' || status === 'paused'
+  const isPaused = status === 'paused'
 
   return (
     <div className="app">
@@ -132,14 +137,30 @@ export function App(): JSX.Element {
         <h1>Meeting Assistant</h1>
         <div className="header-actions">
           <span className={`status status-${status}`}>{statusLabel(status)}</span>
-          <button
-            type="button"
-            className="primary"
-            onClick={isRunning ? onStop : onStart}
-            disabled={status === 'connecting' || settings === null}
-          >
-            {isRunning ? '停止' : '開始'}
-          </button>
+          {isActive ? (
+            <>
+              <button
+                type="button"
+                className="primary"
+                onClick={isPaused ? onResume : onPause}
+                disabled={status === 'connecting'}
+              >
+                {isPaused ? '再開' : '一時停止'}
+              </button>
+              <button type="button" onClick={() => void onStop()}>
+                停止
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="primary"
+              onClick={() => void onStart()}
+              disabled={settings === null}
+            >
+              開始
+            </button>
+          )}
           <button type="button" onClick={() => setShowSettings((v) => !v)}>
             設定
           </button>
@@ -183,6 +204,8 @@ function statusLabel(s: string): string {
       return '接続中…'
     case 'connected':
       return '接続済み'
+    case 'paused':
+      return '一時停止中'
     case 'error':
       return 'エラー'
     default:

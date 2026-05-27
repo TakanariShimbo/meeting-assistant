@@ -6,7 +6,7 @@ import type {
   TranscriptSegment
 } from '@shared/analysis'
 
-export type SessionStatus = 'idle' | 'connecting' | 'connected' | 'error'
+export type SessionStatus = 'idle' | 'connecting' | 'connected' | 'paused' | 'error'
 
 export interface TranscriptItem {
   id: string

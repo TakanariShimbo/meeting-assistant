@@ -1,0 +1,14 @@
+node_modules/
+.venv/
+dist/
+out/
+release/
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+.claude/
+.vscode/
+.idea/

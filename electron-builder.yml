@@ -1,0 +1,70 @@
+appId: io.github.takanarishimbo.meetingassistant
+productName: MeetingAssistant
+asar: true
+
+directories:
+  output: release
+  buildResources: build
+
+# What goes into the final app bundle. electron-vite outputs to `out/`.
+# Dev dependencies are excluded automatically; there are currently no runtime
+# `dependencies` in package.json (everything in src/main and src/preload is
+# bundled, and renderer deps are bundled by Vite).
+files:
+  - out/**/*
+  - package.json
+  - "!**/node_modules/**/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/**/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/**/*.d.ts"
+  - "!**/node_modules/**/.bin"
+
+linux:
+  # Multi-size PNG icons under build/icons/ (16x16.png … 1024x1024.png).
+  # electron-builder installs each into /usr/share/icons/hicolor/<size>/apps/
+  # so GNOME / KDE pick the right size at every density.
+  icon: build/icons
+  target:
+    - AppImage
+    - deb
+  category: AudioVideo
+  maintainer: takanari.shimbo@gmail.com
+  synopsis: OpenAI Realtime API (WebRTC) によるリアルタイム会議文字起こしアシスタント。
+  # IMPORTANT: keep this on a SINGLE line. electron-builder copies this value
+  # verbatim into the generated .desktop file's Comment field, and any newline
+  # makes desktop-file-utils refuse to parse the file (so the app disappears
+  # from GNOME Activities / Ubuntu app search).
+  description: マイクとシステム音声をキャプチャし、OpenAI Realtime API (WebRTC) でリアルタイム文字起こし。会議メモや議事録作成、AI による要約・分析を支援します。
+  desktop:
+    entry:
+      StartupWMClass: MeetingAssistant
+      # Override Comment so GNOME shows a short ASCII default that any locale
+      # can read, with a Japanese localisation for ja_* locales.
+      Comment: Realtime meeting transcription via OpenAI Realtime API.
+      Comment[ja]: OpenAI Realtime API によるリアルタイム会議文字起こしアシスタント。
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  extendInfo:
+    NSMicrophoneUsageDescription: MeetingAssistant uses your microphone to transcribe meetings in real time.
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # icon.ico under build/ is picked up automatically.
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+publish:
+  provider: github
+  releaseType: draft

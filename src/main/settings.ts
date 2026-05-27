@@ -7,11 +7,13 @@ import {
   LANGUAGE_OPTIONS,
   LIVE_MODEL_OPTIONS,
   REASONING_EFFORTS,
+  SESSION_MODES,
   type AppSettings,
   type AudioMode,
   type LanguageCode,
   type LiveModel,
   type ReasoningEffort,
+  type SessionMode,
   type SettingsUpdate
 } from '@shared/types'
 
@@ -32,6 +34,7 @@ interface DiskSettings {
   chatModel?: string
   chatReasoningEffort?: string
   chatWebSearch?: boolean
+  sessionMode?: string
 }
 
 const FILE_NAME = 'settings.json'
@@ -39,6 +42,7 @@ const VALID_LANGUAGES = new Set<string>(LANGUAGE_OPTIONS.map((o) => o.code))
 const VALID_AUDIO_MODES = new Set<string>(AUDIO_MODES)
 const VALID_LIVE_MODELS = new Set<string>(LIVE_MODEL_OPTIONS)
 const VALID_REASONING = new Set<string>(REASONING_EFFORTS)
+const VALID_SESSION_MODES = new Set<string>(SESSION_MODES)
 
 const DEFAULT_LIVE_MODEL: LiveModel = 'gpt-5-mini'
 const DEFAULT_LIVE_REASONING: ReasoningEffort = 'low'
@@ -47,6 +51,7 @@ const DEFAULT_FINAL_REASONING: ReasoningEffort = 'low'
 const DEFAULT_CHAT_MODEL: LiveModel = 'gpt-5'
 const DEFAULT_CHAT_REASONING: ReasoningEffort = 'low'
 const DEFAULT_CHAT_WEB_SEARCH = true
+const DEFAULT_SESSION_MODE: SessionMode = 'meeting'
 
 let cache: DiskSettings | null = null
 
@@ -100,6 +105,7 @@ export async function getAppSettings(): Promise<AppSettings> {
   const finalReasoning = data.finalReasoningEffort ?? DEFAULT_FINAL_REASONING
   const chatModel = data.chatModel ?? DEFAULT_CHAT_MODEL
   const chatReasoning = data.chatReasoningEffort ?? DEFAULT_CHAT_REASONING
+  const sessionMode = data.sessionMode ?? DEFAULT_SESSION_MODE
   return {
     hasApiKey: hasFromFile || hasFromEnv,
     instructions: data.instructions ?? DEFAULT_INSTRUCTIONS,
@@ -123,7 +129,10 @@ export async function getAppSettings(): Promise<AppSettings> {
       : DEFAULT_CHAT_REASONING,
     // For chat, web-search defaults ON (Q&A often needs external context).
     // `??` lets explicit `false` survive; only an unsaved field falls back.
-    chatWebSearch: data.chatWebSearch ?? DEFAULT_CHAT_WEB_SEARCH
+    chatWebSearch: data.chatWebSearch ?? DEFAULT_CHAT_WEB_SEARCH,
+    sessionMode: VALID_SESSION_MODES.has(sessionMode)
+      ? (sessionMode as SessionMode)
+      : DEFAULT_SESSION_MODE
   }
 }
 
@@ -204,6 +213,10 @@ export async function updateSettings(update: SettingsUpdate): Promise<AppSetting
     data.chatReasoningEffort = update.chatReasoningEffort
   }
   if (update.chatWebSearch !== undefined) data.chatWebSearch = update.chatWebSearch
+
+  if (update.sessionMode !== undefined && VALID_SESSION_MODES.has(update.sessionMode)) {
+    data.sessionMode = update.sessionMode
+  }
 
   await persist(data)
   return getAppSettings()

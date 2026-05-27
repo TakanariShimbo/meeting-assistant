@@ -699,10 +699,13 @@ button.secondary:hover:not(:disabled) {
 .transcript-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 2px 4px;
+  gap: 8px;
+  padding: 2px 4px 8px;
   border-bottom: 1px solid #2c2e33;
-  padding-bottom: 8px;
+}
+
+.transcript-toolbar-spacer {
+  flex: 1;
 }
 
 .transcript-label {
@@ -1088,6 +1091,22 @@ button.secondary:hover:not(:disabled) {
   border-left: 3px solid #3b82f6;
   white-space: pre-wrap;
   word-break: break-word;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.turn .text {
+  flex: 1;
+  min-width: 0;
+}
+
+.turn-role {
+  font-size: 11px;
+  color: #9aa0a6;
+  flex: none;
+  padding-top: 2px;
+  user-select: none;
 }
 
 .turn.partial {
@@ -1099,6 +1118,43 @@ button.secondary:hover:not(:disabled) {
 .turn.final {
   border-left-color: #3b82f6;
   color: #e8eaed;
+}
+
+.turn-assistant {
+  background: #1f2a30;
+  border-left-color: #14b8a6;
+}
+
+.turn-assistant.partial {
+  border-left-color: #5eead4;
+}
+
+.turn-assistant .turn-role {
+  color: #5eead4;
+}
+
+.assistant-speaking {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #134e4a;
+  color: #5eead4;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.mode-select {
+  padding: 6px 10px;
+  border: 1px solid #3c3f44;
+  background: #2c2e33;
+  color: inherit;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
 }
 
 .settings {

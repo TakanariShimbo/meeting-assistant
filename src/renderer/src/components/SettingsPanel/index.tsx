@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { AppSettings, AudioMode, LanguageCode } from '@shared/types'
+import type { AppSettings, AudioMode, LanguageCode, SessionMode } from '@shared/types'
 import { enumerateAudioInputs } from '../../audio'
 import { AnalysisModeSection, type AnalysisModeValue } from './sections/AnalysisModeSection'
 import { AudioSection } from './sections/Audio'
 import { GeneralSection } from './sections/General'
+import { SessionModeSection } from './sections/SessionModeSection'
 import { TranscriptionSection } from './sections/Transcription'
 
 interface Props {
@@ -34,6 +35,7 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
     reasoningEffort: settings.chatReasoningEffort,
     webSearch: settings.chatWebSearch
   })
+  const [sessionMode, setSessionMode] = useState<SessionMode>(settings.sessionMode)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [devicesLoading, setDevicesLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -72,7 +74,8 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
         finalWebSearch: finalAnalysis.webSearch,
         chatModel: chatSettings.model,
         chatReasoningEffort: chatSettings.reasoningEffort,
-        chatWebSearch: chatSettings.webSearch
+        chatWebSearch: chatSettings.webSearch,
+        sessionMode
       })
       setApiKey('')
       setMessage('保存しました')
@@ -117,6 +120,8 @@ export function SettingsPanel({ settings, onSaved, onClose }: Props): JSX.Elemen
         devicesLoading={devicesLoading}
         onRefreshDevices={refreshDevices}
       />
+
+      <SessionModeSection value={sessionMode} onChange={setSessionMode} />
 
       <AnalysisModeSection
         title="ライブ分析"

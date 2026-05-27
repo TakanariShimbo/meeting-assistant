@@ -32,7 +32,11 @@ function formatTime(ts: number): string {
 // --- transcript ---
 
 export function serializeTranscriptItem(item: TranscriptItem): string {
-  return `[${formatTime(item.createdAt)}] ${item.text}`
+  // No speaker label for user-side audio: a single mic may capture multiple
+  // people in a real meeting, so attributing the speech to "self" or "user"
+  // would be misleading. Assistant lines stay explicitly tagged.
+  const prefix = item.role === 'assistant' ? 'AI: ' : ''
+  return `[${formatTime(item.createdAt)}] ${prefix}${item.text}`
 }
 
 export function serializeTranscript(items: TranscriptItem[]): string {

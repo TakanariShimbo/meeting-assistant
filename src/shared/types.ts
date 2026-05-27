@@ -16,6 +16,8 @@ export interface AppSettings {
   chatModel: LiveModel
   chatReasoningEffort: ReasoningEffort
   chatWebSearch: boolean
+  /** Initial Realtime session mode when Start is pressed. Switchable mid-session via the header toggle. */
+  sessionMode: SessionMode
 }
 
 export interface SettingsUpdate {
@@ -34,6 +36,7 @@ export interface SettingsUpdate {
   chatModel?: LiveModel
   chatReasoningEffort?: ReasoningEffort
   chatWebSearch?: boolean
+  sessionMode?: SessionMode
 }
 
 export const REASONING_EFFORTS = ['minimal', 'low', 'medium', 'high'] as const
@@ -57,6 +60,26 @@ export const LIVE_MODEL_LABELS: Record<LiveModel, string> = {
 
 export const AUDIO_MODES = ['mic', 'system', 'mixed'] as const
 export type AudioMode = (typeof AUDIO_MODES)[number]
+
+/**
+ * Realtime session behavior — distinguishes who triggers the assistant reply.
+ *  - `meeting`:      `create_response=false`. Reply only when the user clicks
+ *                    "返事リクエスト" (= 手動返答). Default for note-taking use cases.
+ *  - `conversation`: `create_response=true`. Assistant replies automatically
+ *                    on every detected turn end (= 自動返答). Manual reply
+ *                    request still works.
+ *
+ * The internal type values stay `meeting` / `conversation` for stability of
+ * persisted settings; only the UI labels speak of 手動/自動 返答.
+ * Mode can be switched mid-session via `session.update`.
+ */
+export const SESSION_MODES = ['meeting', 'conversation'] as const
+export type SessionMode = (typeof SESSION_MODES)[number]
+
+export const SESSION_MODE_LABELS: Record<SessionMode, string> = {
+  meeting: '手動返答',
+  conversation: '自動返答'
+}
 
 export const AUDIO_MODE_LABELS: Record<AudioMode, string> = {
   mic: 'マイクのみ',

@@ -6,11 +6,16 @@ import type {
   TranscriptSegment
 } from '@shared/analysis'
 import type { ChatMessage } from '@shared/chat'
+import type { SessionMode } from '@shared/types'
 
 export type SessionStatus = 'idle' | 'connecting' | 'connected' | 'paused' | 'error'
 
+export type TranscriptRole = 'user' | 'assistant'
+
 export interface TranscriptItem {
   id: string
+  /** 'user' for human transcripts, 'assistant' for AI replies in conversation mode. */
+  role: TranscriptRole
   text: string
   isFinal: boolean
   createdAt: number
@@ -48,10 +53,19 @@ interface State {
   live: ModeState<LiveAnalysis>
   final: ModeState<FinalAnalysis>
   chat: ChatSlice
+  /** Realtime session mode currently in effect (mirrors what client sent). */
+  sessionMode: SessionMode
+  /** True while assistant audio is playing back. */
+  assistantSpeaking: boolean
 
   setStatus: (s: SessionStatus, err?: string | null) => void
   upsertDelta: (id: string, delta: string) => void
   upsertFinal: (id: string, text: string) => void
+  /** Assistant transcript streaming (conversation mode). Same upsert semantics as user. */
+  upsertAssistantDelta: (id: string, delta: string) => void
+  upsertAssistantFinal: (id: string, text: string) => void
+  setSessionMode: (mode: SessionMode) => void
+  setAssistantSpeaking: (speaking: boolean) => void
   clear: () => void
 
   appendChatMessage: (msg: ChatMessage) => void
@@ -98,6 +112,40 @@ const initialChat: ChatSlice = {
   errorMessage: null
 }
 
+/**
+ * Upsert a transcript item. Either `delta` (append-and-leave-partial) or
+ * `final` (replace-text-mark-final) must be supplied. The role is preserved
+ * across updates — a streaming `assistant` item never gets re-classified.
+ */
+function upsertItem(
+  items: TranscriptItem[],
+  id: string,
+  role: TranscriptRole,
+  payload: { delta?: string; final?: string }
+): TranscriptItem[] {
+  const idx = items.findIndex((i) => i.id === id)
+  if (idx === -1) {
+    return [
+      ...items,
+      {
+        id,
+        role,
+        text: payload.final ?? payload.delta ?? '',
+        isFinal: payload.final !== undefined,
+        createdAt: Date.now()
+      }
+    ]
+  }
+  const next = items.slice()
+  const prev = next[idx]
+  if (payload.final !== undefined) {
+    next[idx] = { ...prev, text: payload.final, isFinal: true }
+  } else {
+    next[idx] = { ...prev, text: prev.text + (payload.delta ?? '') }
+  }
+  return next
+}
+
 export const useStore = create<State>((set, get) => ({
   status: 'idle',
   errorMessage: null,
@@ -105,41 +153,34 @@ export const useStore = create<State>((set, get) => ({
   live: initialModeState<LiveAnalysis>(),
   final: initialModeState<FinalAnalysis>(),
   chat: initialChat,
+  sessionMode: 'meeting',
+  assistantSpeaking: false,
 
   setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
 
   upsertDelta: (id, delta) =>
-    set((s) => {
-      const idx = s.items.findIndex((i) => i.id === id)
-      if (idx === -1) {
-        return {
-          items: [...s.items, { id, text: delta, isFinal: false, createdAt: Date.now() }]
-        }
-      }
-      const next = s.items.slice()
-      next[idx] = { ...next[idx], text: next[idx].text + delta }
-      return { items: next }
-    }),
+    set((s) => ({ items: upsertItem(s.items, id, 'user', { delta }) })),
 
   upsertFinal: (id, text) =>
-    set((s) => {
-      const idx = s.items.findIndex((i) => i.id === id)
-      if (idx === -1) {
-        return {
-          items: [...s.items, { id, text, isFinal: true, createdAt: Date.now() }]
-        }
-      }
-      const next = s.items.slice()
-      next[idx] = { ...next[idx], text, isFinal: true }
-      return { items: next }
-    }),
+    set((s) => ({ items: upsertItem(s.items, id, 'user', { final: text }) })),
+
+  upsertAssistantDelta: (id, delta) =>
+    set((s) => ({ items: upsertItem(s.items, id, 'assistant', { delta }) })),
+
+  upsertAssistantFinal: (id, text) =>
+    set((s) => ({ items: upsertItem(s.items, id, 'assistant', { final: text }) })),
+
+  setSessionMode: (sessionMode) => set({ sessionMode }),
+
+  setAssistantSpeaking: (assistantSpeaking) => set({ assistantSpeaking }),
 
   clear: () =>
     set({
       items: [],
       live: initialModeState<LiveAnalysis>(),
       final: initialModeState<FinalAnalysis>(),
-      chat: initialChat
+      chat: initialChat,
+      assistantSpeaking: false
     }),
 
   appendChatMessage: (msg) =>
